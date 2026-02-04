@@ -9,8 +9,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Bobíci">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="sprites/bee.png">
+  <link rel="manifest" href="/sprites/manifest.json">
+  <link rel="apple-touch-icon" href="/sprites/sprites/bee.png">
   <title>Bobíci</title>
   <style>
     body {
@@ -83,7 +83,7 @@
 
     spriteFiles.forEach(file => {
       const img = new Image();
-      img.src = `sprites/${file}`;
+      img.src = `/sprites/sprites/${file}`;
       img.onload = () => {
         loadedImages++;
         if (loadedImages === spriteFiles.length) {
@@ -523,7 +523,7 @@
     // Service Worker registration for PWA support
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
+        navigator.serviceWorker.register('/sprites/service-worker.js')
           .then(registration => {
             console.log('Service Worker registered successfully:', registration.scope);
           })
