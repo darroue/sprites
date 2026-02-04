@@ -110,7 +110,7 @@
         this.scale = 1;
         this.scaleDirection = 1;
         this.scaleSpeed = 0.01;
-        
+
         // Chytání
         this.isDragging = false;
         this.dragOffsetX = 0;
@@ -124,7 +124,7 @@
         if (this.isDragging) {
           return;
         }
-        
+
         if (!this.isWalking) {
           // Režim poskakování
           this.x += this.speedX;
@@ -200,16 +200,16 @@
 
       contains(x, y) {
         return x >= this.x && x <= this.x + this.size &&
-               y >= this.y && y <= this.y + this.size;
+          y >= this.y && y <= this.y + this.size;
       }
-      
+
       resetPhysics() {
         // Reset poskakování a zahájení nového cyklu
         this.isWalking = false;
         this.bounceCount = 0;
         this.onGround = false;
       }
-      
+
       draw() {
         ctx.save();
 
@@ -303,7 +303,7 @@
       const pos = getMousePos(e);
       mouseX = pos.x;
       mouseY = pos.y;
-      
+
       const sprite = getSpriteAtPosition(mouseX, mouseY);
       if (sprite) {
         draggedSprite = sprite;
@@ -323,7 +323,7 @@
       const lastMouseY = mouseY;
       mouseX = pos.x;
       mouseY = pos.y;
-      
+
       if (draggedSprite) {
         draggedSprite.x = mouseX - draggedSprite.dragOffsetX;
         draggedSprite.y = mouseY - draggedSprite.dragOffsetY;
@@ -344,10 +344,10 @@
         const throwMultiplier = 0.5; // Násobitel síly hození
         draggedSprite.speedX = (draggedSprite.lastVelocityX || 0) * throwMultiplier;
         draggedSprite.jumpSpeed = (draggedSprite.lastVelocityY || 0) * throwMultiplier;
-        
+
         // Přidání rotačního momentu podle horizontální rychlosti
         draggedSprite.rotationSpeed = draggedSprite.speedX * 0.02;
-        
+
         draggedSprite.isDragging = false;
         draggedSprite.resetPhysics();
         draggedSprite = null;
@@ -367,7 +367,7 @@
     canvas.addEventListener('touchmove', handleMove);
     canvas.addEventListener('touchend', handleEnd);
     canvas.addEventListener('touchcancel', handleEnd);
-    
+
     // Přidání nového sprite pravým tlačítkem nebo dlouhým dotekem
     canvas.addEventListener('contextmenu', (e) => {
       e.preventDefault();
