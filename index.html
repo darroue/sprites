@@ -35,7 +35,7 @@
 <body>
   <canvas id="canvas"></canvas>
   <div id="info">
-    Klikněte kamkoliv pro přidání dalších sprites!<br>
+    Chyťte a hoďte sprite! Pravé tlačítko přidá nový sprite.<br>
     Počet sprites: <span id="count">0</span>
   </div>
 
@@ -110,9 +110,21 @@
         this.scale = 1;
         this.scaleDirection = 1;
         this.scaleSpeed = 0.01;
+        
+        // Chytání
+        this.isDragging = false;
+        this.dragOffsetX = 0;
+        this.dragOffsetY = 0;
+        this.lastVelocityX = 0;
+        this.lastVelocityY = 0;
       }
 
       update() {
+        // Pokud je chycený, neprovádí normální update
+        if (this.isDragging) {
+          return;
+        }
+        
         if (!this.isWalking) {
           // Režim poskakování
           this.x += this.speedX;
@@ -130,8 +142,9 @@
               this.isWalking = true;
               this.jumpSpeed = 0;
               this.speedX = (Math.random() > 0.5 ? 1 : -1) * this.walkSpeed;
+              this.rotationSpeed *= 0.1; // Výrazně zpomal rotaci při chůzi
             } else {
-              this.jumpSpeed = this.jumpForce * Math.pow(0.7, this.bounceCount); // Postupné tlumení
+              this.jumpSpeed = this.jumpForce * Math.pow(0.5, this.bounceCount); // Rychlejší tlumení
             }
             this.onGround = true;
           } else {
@@ -185,6 +198,18 @@
         }
       }
 
+      contains(x, y) {
+        return x >= this.x && x <= this.x + this.size &&
+               y >= this.y && y <= this.y + this.size;
+      }
+      
+      resetPhysics() {
+        // Reset poskakování a zahájení nového cyklu
+        this.isWalking = false;
+        this.bounceCount = 0;
+        this.onGround = false;
+      }
+      
       draw() {
         ctx.save();
 
@@ -241,26 +266,115 @@
       countDisplay.textContent = sprites.length;
     }
 
-    // Funkce pro přidání sprite na pozici
-    function addSpriteAt(clientX, clientY) {
+    // Drag and drop proměnné
+    let draggedSprite = null;
+    let mouseX = 0;
+    let mouseY = 0;
+    let isDraggingAny = false;
+
+    // Funkce pro získání pozice myši/dotyku
+    function getMousePos(e) {
       const rect = canvas.getBoundingClientRect();
-      const x = clientX - rect.left - 50;
-      const y = clientY - rect.top - 50;
-      const randomImage = images[Math.floor(Math.random() * images.length)];
-      sprites.push(new Sprite(x, y, randomImage));
-      updateCount();
+      if (e.touches) {
+        return {
+          x: e.touches[0].clientX - rect.left,
+          y: e.touches[0].clientY - rect.top
+        };
+      }
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
     }
 
-    // Přidání sprite kliknutím
-    canvas.addEventListener('click', (e) => {
-      addSpriteAt(e.clientX, e.clientY);
-    });
+    // Najdi sprite pod kurzorem (poslední = nahoře)
+    function getSpriteAtPosition(x, y) {
+      for (let i = sprites.length - 1; i >= 0; i--) {
+        if (sprites[i].contains(x, y)) {
+          return sprites[i];
+        }
+      }
+      return null;
+    }
 
-    // Přidání sprite dotekem (mobil/tablet)
-    canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault(); // Zabrání scrollování při dotyku
-      const touch = e.touches[0];
-      addSpriteAt(touch.clientX, touch.clientY);
+    // Mouse/Touch start - chytnutí
+    function handleStart(e) {
+      e.preventDefault();
+      const pos = getMousePos(e);
+      mouseX = pos.x;
+      mouseY = pos.y;
+      
+      const sprite = getSpriteAtPosition(mouseX, mouseY);
+      if (sprite) {
+        draggedSprite = sprite;
+        draggedSprite.isDragging = true;
+        draggedSprite.dragOffsetX = mouseX - sprite.x;
+        draggedSprite.dragOffsetY = mouseY - sprite.y;
+        isDraggingAny = true;
+        canvas.style.cursor = 'grabbing';
+      }
+    }
+
+    // Mouse/Touch move - přetahování
+    function handleMove(e) {
+      e.preventDefault();
+      const pos = getMousePos(e);
+      const lastMouseX = mouseX;
+      const lastMouseY = mouseY;
+      mouseX = pos.x;
+      mouseY = pos.y;
+      
+      if (draggedSprite) {
+        draggedSprite.x = mouseX - draggedSprite.dragOffsetX;
+        draggedSprite.y = mouseY - draggedSprite.dragOffsetY;
+        // Uložení rychlosti pro hození
+        draggedSprite.lastVelocityX = (mouseX - lastMouseX);
+        draggedSprite.lastVelocityY = (mouseY - lastMouseY);
+      } else {
+        // Změna kurzoru při najetí na sprite
+        const sprite = getSpriteAtPosition(mouseX, mouseY);
+        canvas.style.cursor = sprite ? 'grab' : 'default';
+      }
+    }
+
+    // Mouse/Touch end - puštění/hození
+    function handleEnd(e) {
+      if (draggedSprite) {
+        // Nastav rychlosti podle posledního pohybu (fyzika hození)
+        const throwMultiplier = 0.5; // Násobitel síly hození
+        draggedSprite.speedX = (draggedSprite.lastVelocityX || 0) * throwMultiplier;
+        draggedSprite.jumpSpeed = (draggedSprite.lastVelocityY || 0) * throwMultiplier;
+        
+        // Přidání rotačního momentu podle horizontální rychlosti
+        draggedSprite.rotationSpeed = draggedSprite.speedX * 0.02;
+        
+        draggedSprite.isDragging = false;
+        draggedSprite.resetPhysics();
+        draggedSprite = null;
+        isDraggingAny = false;
+        canvas.style.cursor = 'default';
+      }
+    }
+
+    // Event listenery pro myš
+    canvas.addEventListener('mousedown', handleStart);
+    canvas.addEventListener('mousemove', handleMove);
+    canvas.addEventListener('mouseup', handleEnd);
+    canvas.addEventListener('mouseleave', handleEnd);
+
+    // Event listenery pro dotyk (mobil/tablet)
+    canvas.addEventListener('touchstart', handleStart);
+    canvas.addEventListener('touchmove', handleMove);
+    canvas.addEventListener('touchend', handleEnd);
+    canvas.addEventListener('touchcancel', handleEnd);
+    
+    // Přidání nového sprite pravým tlačítkem nebo dlouhým dotekem
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const pos = getMousePos(e);
+      const randomImage = images[Math.floor(Math.random() * images.length)];
+      sprites.push(new Sprite(pos.x - 50, pos.y - 50, randomImage));
+      updateCount();
     });
 
     // Změna velikosti okna
