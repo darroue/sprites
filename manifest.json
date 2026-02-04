@@ -1,0 +1,24 @@
+{
+  "name": "Bobíci",
+  "short_name": "Bobíci",
+  "description": "Interaktivní aplikace s poskakujícími sprites",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#667eea",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "sprites/bee.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "sprites/sponge_bob.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
