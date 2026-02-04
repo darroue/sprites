@@ -340,40 +340,40 @@
       } else {
         // Změna kurzoru při najetí na sprite
         const sprite = getSpriteAtPosition(mouseX, mouseY);
-        // Mouse/Touch end - puštění/hození
-        function handleEnd(e) {
-          if (draggedSprite) {
-            // Nastav rychlosti podle posledního pohybu (fyzika hození)
-            const throwMultiplier = 0.5; // Násobitel síly hození
-            draggedSprite.speedX = (draggedSprite.lastVelocityX || 0) * throwMultiplier;
-            draggedSprite.jumpSpeed = (draggedSprite.lastVelocityY || 0) * throwMultiplier;
+        canvas.style.cursor = sprite ? 'grab' : 'default';
+      }
+    }
 
-            // Přidání rotačního momentu podle horizontální rychlosti
-            draggedSprite.rotationSpeed = draggedSprite.speedX * 0.02;
+    // Mouse/Touch end - puštění/hození
+    function handleEnd(e) {
+      if (draggedSprite) {
+        // Nastav rychlosti podle posledního pohybu (fyzika hození)
+        const throwMultiplier = 0.5; // Násobitel síly hození
+        draggedSprite.speedX = (draggedSprite.lastVelocityX || 0) * throwMultiplier;
+        draggedSprite.jumpSpeed = (draggedSprite.lastVelocityY || 0) * throwMultiplier;
 
-            draggedSprite.isDragging = false;
-            draggedSprite.resetPhysics();
-            draggedSprite = null;
-            isDraggingAny = false;
-            canvas.style.cursor = 'default';
-          } else if (e.type === 'touchend' || e.type === 'touchcancel') {
-            // Kontrola dlouhého dotyku pro přidání sprite na mobilu
-            const touchDuration = Date.now() - touchStartTime;
-            const distance = Math.sqrt(
-              Math.pow(mouseX - touchStartPos.x, 2) +
-              Math.pow(mouseY - touchStartPos.y, 2)
-            );
+        // Přidání rotačního momentu podle horizontální rychlosti
+        draggedSprite.rotationSpeed = draggedSprite.speedX * 0.02;
 
-            // Pokud byl dotyk krátký a bez pohybu, přidej nový sprite
-            if (touchDuration < 300 && distance < 20) {
-              const randomImage = images[Math.floor(Math.random() * images.length)];
-              sprites.push(new Sprite(touchStartPos.x - 25, touchStartPos.y - 25, randomImage));
-              updateCount();
-            }
-          }
-        } draggedSprite = null;
+        draggedSprite.isDragging = false;
+        draggedSprite.resetPhysics();
+        draggedSprite = null;
         isDraggingAny = false;
         canvas.style.cursor = 'default';
+      } else if (e.type === 'touchend' || e.type === 'touchcancel') {
+        // Kontrola krátkého dotyku pro přidání sprite na mobilu
+        const touchDuration = Date.now() - touchStartTime;
+        const distance = Math.sqrt(
+          Math.pow(mouseX - touchStartPos.x, 2) +
+          Math.pow(mouseY - touchStartPos.y, 2)
+        );
+
+        // Pokud byl dotyk krátký a bez pohybu, přidej nový sprite
+        if (touchDuration < 300 && distance < 20) {
+          const randomImage = images[Math.floor(Math.random() * images.length)];
+          sprites.push(new Sprite(touchStartPos.x - 25, touchStartPos.y - 25, randomImage));
+          updateCount();
+        }
       }
     }
 
