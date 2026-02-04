@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poskakující Sprites</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      display: block;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="info">
+    Klikněte kamkoliv pro přidání dalších sprites!<br>
+    Počet sprites: <span id="count">0</span>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const countDisplay = document.getElementById('count');
+
+    // Nastavení velikosti canvasu
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Seznam všech sprites
+    const spriteFiles = [
+      'bee.png',
+      'cactus.png',
+      'cat.png',
+      'chameleon.png',
+      'chocolate.png',
+      'flower.png',
+      'ice_cream.png',
+      'lemon.png',
+      'rasberry.png',
+      'snail.png',
+      'sponge_bob.png',
+      'sushi.png',
+      'toast.png',
+      'whale.png'
+    ];
+
+    // Načtení obrázků
+    const images = [];
+    let loadedImages = 0;
+
+    spriteFiles.forEach(file => {
+      const img = new Image();
+      img.src = `sprites/${file}`;
+      img.onload = () => {
+        loadedImages++;
+        if (loadedImages === spriteFiles.length) {
+          init();
+        }
+      };
+      images.push(img);
+    });
+
+    // Třída pro každý sprite
+    class Sprite {
+      constructor(x, y, image) {
+        this.image = image;
+        this.size = 50 + Math.random() * 50; // Velikost 50-100px
+        this.x = x !== undefined ? x : Math.random() * (canvas.width - this.size);
+        this.y = y !== undefined ? y : Math.random() * (canvas.height - this.size);
+
+        // Pohyb
+        this.speedX = (Math.random() - 0.5) * 3;
+        this.speedY = (Math.random() - 0.5) * 3;
+
+        // Poskakování
+        this.jumpSpeed = 0;
+        this.gravity = 0.3;
+        this.jumpForce = -10;
+        this.onGround = false;
+        this.bounceCount = 0;
+        this.maxBounces = 5 + Math.floor(Math.random() * 3); // 5-7 odrazů
+        this.isWalking = false;
+        this.walkSpeed = 0.3 + Math.random() * 0.5; // Rychlost chůze
+
+        // Animace
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.1;
+        this.scale = 1;
+        this.scaleDirection = 1;
+        this.scaleSpeed = 0.01;
+      }
+
+      update() {
+        if (!this.isWalking) {
+          // Režim poskakování
+          this.x += this.speedX;
+
+          this.jumpSpeed += this.gravity;
+          this.y += this.jumpSpeed;
+
+          // Kontrola podlahy
+          if (this.y + this.size >= canvas.height) {
+            this.y = canvas.height - this.size;
+            this.bounceCount++;
+
+            // Po určitém počtu odrazů přejdi na chůzi
+            if (this.bounceCount >= this.maxBounces) {
+              this.isWalking = true;
+              this.jumpSpeed = 0;
+              this.speedX = (Math.random() > 0.5 ? 1 : -1) * this.walkSpeed;
+            } else {
+              this.jumpSpeed = this.jumpForce * Math.pow(0.7, this.bounceCount); // Postupné tlumení
+            }
+            this.onGround = true;
+          } else {
+            this.onGround = false;
+          }
+
+          // Kontrola stropu
+          if (this.y <= 0) {
+            this.y = 0;
+            this.jumpSpeed = 0;
+          }
+
+          // Odraz od stěn
+          if (this.x <= 0 || this.x + this.size >= canvas.width) {
+            this.speedX *= -1;
+            this.x = this.x <= 0 ? 0 : canvas.width - this.size;
+          }
+        } else {
+          // Režim chůze
+          this.x += this.speedX;
+          this.y = canvas.height - this.size; // Drž na zemi
+
+          // Otočení při dosažení kraje
+          if (this.x <= 0 || this.x + this.size >= canvas.width) {
+            this.speedX *= -1;
+            this.x = this.x <= 0 ? 0 : canvas.width - this.size;
+          }
+
+          // Mírné vertikální houpání při chůzi
+          this.y -= Math.abs(Math.sin(Date.now() * 0.01 * this.walkSpeed)) * 3;
+        }
+
+        // Rotace - pomalejší při chůzi
+        if (this.isWalking) {
+          this.rotation += this.rotationSpeed * 0.3;
+        } else {
+          this.rotation += this.rotationSpeed;
+        }
+
+        // Pulzující efekt - menší při chůzi
+        if (this.isWalking) {
+          this.scale += this.scaleSpeed * this.scaleDirection * 0.5;
+          if (this.scale > 1.05 || this.scale < 0.95) {
+            this.scaleDirection *= -1;
+          }
+        } else {
+          this.scale += this.scaleSpeed * this.scaleDirection;
+          if (this.scale > 1.1 || this.scale < 0.9) {
+            this.scaleDirection *= -1;
+          }
+        }
+      }
+
+      draw() {
+        ctx.save();
+
+        // Přesun do středu sprite
+        ctx.translate(this.x + this.size / 2, this.y + this.size / 2);
+
+        // Aplikace transformací
+        ctx.rotate(this.rotation);
+        ctx.scale(this.scale, this.scale);
+
+        // Stín
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 5;
+
+        // Vykreslení obrázku
+        ctx.drawImage(
+          this.image,
+          -this.size / 2,
+          -this.size / 2,
+          this.size,
+          this.size
+        );
+
+        ctx.restore();
+      }
+    }
+
+    const sprites = [];
+
+    function init() {
+      // Vytvoření počátečního sprite
+      const randomImage = images[Math.floor(Math.random() * images.length)];
+      sprites.push(new Sprite(canvas.width / 2 - 50, 50, randomImage));
+      updateCount();
+      animate();
+    }
+
+    function animate() {
+      // Vyčištění canvasu
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Aktualizace a vykreslení všech sprites
+      sprites.forEach(sprite => {
+        sprite.update();
+        sprite.draw();
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    function updateCount() {
+      countDisplay.textContent = sprites.length;
+    }
+
+    // Funkce pro přidání sprite na pozici
+    function addSpriteAt(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const x = clientX - rect.left - 50;
+      const y = clientY - rect.top - 50;
+      const randomImage = images[Math.floor(Math.random() * images.length)];
+      sprites.push(new Sprite(x, y, randomImage));
+      updateCount();
+    }
+
+    // Přidání sprite kliknutím
+    canvas.addEventListener('click', (e) => {
+      addSpriteAt(e.clientX, e.clientY);
+    });
+
+    // Přidání sprite dotekem (mobil/tablet)
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Zabrání scrollování při dotyku
+      const touch = e.touches[0];
+      addSpriteAt(touch.clientX, touch.clientY);
+    });
+
+    // Změna velikosti okna
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+
+</html>
