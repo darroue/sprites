@@ -48,6 +48,10 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    // Gravitace ovládaná nakloněním telefonu
+    let gravityX = 0; // Horizontální gravitace
+    let gravityY = 0.3; // Vertikální gravitace
+
     // Seznam všech sprites
     const spriteFiles = [
       'bee.png',
@@ -96,8 +100,6 @@
 
         // Poskakování
         this.jumpSpeed = 0;
-        this.gravity = 0.3;
-        this.jumpForce = -10;
         this.onGround = false;
         this.bounceCount = 0;
         this.maxBounces = 5 + Math.floor(Math.random() * 3); // 5-7 odrazů
@@ -127,40 +129,79 @@
 
         if (!this.isWalking) {
           // Režim poskakování
-          this.x += this.speedX;
 
-          this.jumpSpeed += this.gravity;
+          // Aplikuj gravitaci podle naklonění
+          this.speedX += gravityX;
+          this.jumpSpeed += gravityY;
+
+          this.x += this.speedX;
           this.y += this.jumpSpeed;
 
-          // Kontrola podlahy
-          if (this.y + this.size >= canvas.height) {
+          // Tlumení rychlosti (odpor vzduchu)
+          this.speedX *= 0.99;
+
+          // Kontrola všech stran (kterákoliv může být "dno")
+          let hitEdge = false;
+          const bounceThreshold = 0.1; // Minimální rychlost pro odraz
+
+          // Dolní strana
+          if (this.y + this.size >= canvas.height && this.jumpSpeed > 0) {
             this.y = canvas.height - this.size;
-            this.bounceCount++;
-
-            // Po určitém počtu odrazů přejdi na chůzi
-            if (this.bounceCount >= this.maxBounces) {
-              this.isWalking = true;
-              this.jumpSpeed = 0;
-              this.speedX = (Math.random() > 0.5 ? 1 : -1) * this.walkSpeed;
-              this.rotationSpeed *= 0.1; // Výrazně zpomal rotaci při chůzi
+            if (Math.abs(this.jumpSpeed) > bounceThreshold) {
+              this.jumpSpeed *= -0.5; // Odraz
+              this.bounceCount++;
             } else {
-              this.jumpSpeed = this.jumpForce * Math.pow(0.5, this.bounceCount); // Rychlejší tlumení
+              this.jumpSpeed = 0;
+              hitEdge = true;
             }
-            this.onGround = true;
-          } else {
-            this.onGround = false;
           }
 
-          // Kontrola stropu
-          if (this.y <= 0) {
+          // Horní strana
+          if (this.y <= 0 && this.jumpSpeed < 0) {
             this.y = 0;
-            this.jumpSpeed = 0;
+            if (Math.abs(this.jumpSpeed) > bounceThreshold) {
+              this.jumpSpeed *= -0.5;
+              this.bounceCount++;
+            } else {
+              this.jumpSpeed = 0;
+              hitEdge = true;
+            }
           }
 
-          // Odraz od stěn
-          if (this.x <= 0 || this.x + this.size >= canvas.width) {
-            this.speedX *= -1;
-            this.x = this.x <= 0 ? 0 : canvas.width - this.size;
+          // Levá strana
+          if (this.x <= 0 && this.speedX < 0) {
+            this.x = 0;
+            if (Math.abs(this.speedX) > bounceThreshold) {
+              this.speedX *= -0.5;
+              this.bounceCount++;
+            } else {
+              this.speedX = 0;
+              hitEdge = true;
+            }
+          }
+
+          // Pravá strana
+          if (this.x + this.size >= canvas.width && this.speedX > 0) {
+            this.x = canvas.width - this.size;
+            if (Math.abs(this.speedX) > bounceThreshold) {
+              this.speedX *= -0.5;
+              this.bounceCount++;
+            } else {
+              this.speedX = 0;
+              hitEdge = true;
+            }
+          }
+
+          // Přechod na chůzi po dosažení dostatečného počtu odrazů nebo pokud je neaktivní
+          if (hitEdge && (Math.abs(this.speedX) < 0.1 && Math.abs(this.jumpSpeed) < 0.1)) {
+            this.bounceCount++;
+          }
+
+          if (this.bounceCount >= this.maxBounces) {
+            this.isWalking = true;
+            this.jumpSpeed = 0;
+            this.speedX = (Math.random() > 0.5 ? 1 : -1) * this.walkSpeed;
+            this.rotationSpeed *= 0.1;
           }
         } else {
           // Režim chůze
@@ -403,6 +444,44 @@
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     });
+
+    // Přidat podporu pro naklonění telefonu (gyroscope)
+    let gyroEnabled = false;
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', (e) => {
+        // Aktivuj gyro pouze pokud dostaneme platná data
+        if (e.gamma !== null && e.beta !== null) {
+          gyroEnabled = true;
+          // beta je přední/zadní náklon (-180 to 180)
+          // gamma je levý/pravý náklon (-90 to 90)
+          const beta = e.beta || 0;   // vertikální náklon
+          const gamma = e.gamma || 0; // horizontální náklon
+
+          // Přepočítej gravitaci podle naklonění
+          // Omez rozsah a zmenši efekt pro přirozenější pohyb
+          gravityX = Math.max(-0.5, Math.min(0.5, gamma / 90 * 0.5));
+          gravityY = Math.max(-0.5, Math.min(0.5, (beta - 90) / 90 * 0.5 + 0.3));
+        }
+      });
+
+      // Tlačítko pro požádání o práva na iOS 13+
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const info = document.getElementById('info');
+        const btn = document.createElement('button');
+        btn.textContent = 'Povolit naklonění';
+        btn.style.cssText = 'display:block; margin-top:10px; padding:5px 10px; cursor:pointer;';
+        btn.onclick = () => {
+          DeviceOrientationEvent.requestPermission()
+            .then(response => {
+              if (response === 'granted') {
+                btn.remove();
+              }
+            })
+            .catch(console.error);
+        };
+        info.appendChild(btn);
+      }
+    }
   </script>
 </body>
 
