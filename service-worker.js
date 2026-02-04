@@ -1,21 +1,22 @@
 const CACHE_NAME = 'bobici-v1';
 const urlsToCache = [
-  './',
-  './index.html',
-  './sprites/bee.png',
-  './sprites/cactus.png',
-  './sprites/cat.png',
-  './sprites/chameleon.png',
-  './sprites/chocolate.png',
-  './sprites/flower.png',
-  './sprites/ice_cream.png',
-  './sprites/lemon.png',
-  './sprites/rasberry.png',
-  './sprites/snail.png',
-  './sprites/sponge_bob.png',
-  './sprites/sushi.png',
-  './sprites/toast.png',
-  './sprites/whale.png'
+  '/sprites/',
+  '/sprites/index.html',
+  '/sprites/manifest.json',
+  '/sprites/sprites/bee.png',
+  '/sprites/sprites/cactus.png',
+  '/sprites/sprites/cat.png',
+  '/sprites/sprites/chameleon.png',
+  '/sprites/sprites/chocolate.png',
+  '/sprites/sprites/flower.png',
+  '/sprites/sprites/ice_cream.png',
+  '/sprites/sprites/lemon.png',
+  '/sprites/sprites/rasberry.png',
+  '/sprites/sprites/snail.png',
+  '/sprites/sprites/sponge_bob.png',
+  '/sprites/sprites/sushi.png',
+  '/sprites/sprites/toast.png',
+  '/sprites/sprites/whale.png'
 ];
 
 // Install event - cache resources
