@@ -105,6 +105,7 @@
         this.maxBounces = 5 + Math.floor(Math.random() * 3); // 5-7 odrazů
         this.isWalking = false;
         this.walkSpeed = 0.3 + Math.random() * 0.5; // Rychlost chůze
+        this.stuckToSide = null; // 'top', 'bottom', 'left', 'right' - strana, na které stojí
 
         // Animace
         this.rotation = Math.random() * Math.PI * 2;
@@ -153,6 +154,7 @@
             } else {
               this.jumpSpeed = 0;
               hitEdge = true;
+              this.stuckToSide = 'bottom';
             }
           }
 
@@ -165,6 +167,7 @@
             } else {
               this.jumpSpeed = 0;
               hitEdge = true;
+              this.stuckToSide = 'top';
             }
           }
 
@@ -177,6 +180,7 @@
             } else {
               this.speedX = 0;
               hitEdge = true;
+              this.stuckToSide = 'left';
             }
           }
 
@@ -189,6 +193,7 @@
             } else {
               this.speedX = 0;
               hitEdge = true;
+              this.stuckToSide = 'right';
             }
           }
 
@@ -204,18 +209,42 @@
             this.rotationSpeed *= 0.1;
           }
         } else {
-          // Režim chůze
-          this.x += this.speedX;
-          this.y = canvas.height - this.size; // Drž na zemi
-
-          // Otočení při dosažení kraje
-          if (this.x <= 0 || this.x + this.size >= canvas.width) {
-            this.speedX *= -1;
-            this.x = this.x <= 0 ? 0 : canvas.width - this.size;
+          // Režim chůze - drž sprite připoutaný ke straně, na které dopadl
+          if (this.stuckToSide === 'bottom') {
+            this.x += this.speedX;
+            this.y = canvas.height - this.size;
+            // Otočení při dosažení kraje
+            if (this.x <= 0 || this.x + this.size >= canvas.width) {
+              this.speedX *= -1;
+              this.x = this.x <= 0 ? 0 : canvas.width - this.size;
+            }
+            // Mírné vertikální houpání při chůzi
+            this.y -= Math.abs(Math.sin(Date.now() * 0.01 * this.walkSpeed)) * 3;
+          } else if (this.stuckToSide === 'top') {
+            this.x += this.speedX;
+            this.y = 0;
+            if (this.x <= 0 || this.x + this.size >= canvas.width) {
+              this.speedX *= -1;
+              this.x = this.x <= 0 ? 0 : canvas.width - this.size;
+            }
+            this.y += Math.abs(Math.sin(Date.now() * 0.01 * this.walkSpeed)) * 3;
+          } else if (this.stuckToSide === 'left') {
+            this.y += this.speedX; // Použij speedX pro vertikální pohyb
+            this.x = 0;
+            if (this.y <= 0 || this.y + this.size >= canvas.height) {
+              this.speedX *= -1;
+              this.y = this.y <= 0 ? 0 : canvas.height - this.size;
+            }
+            this.x += Math.abs(Math.sin(Date.now() * 0.01 * this.walkSpeed)) * 3;
+          } else if (this.stuckToSide === 'right') {
+            this.y += this.speedX;
+            this.x = canvas.width - this.size;
+            if (this.y <= 0 || this.y + this.size >= canvas.height) {
+              this.speedX *= -1;
+              this.y = this.y <= 0 ? 0 : canvas.height - this.size;
+            }
+            this.x -= Math.abs(Math.sin(Date.now() * 0.01 * this.walkSpeed)) * 3;
           }
-
-          // Mírné vertikální houpání při chůzi
-          this.y -= Math.abs(Math.sin(Date.now() * 0.01 * this.walkSpeed)) * 3;
         }
 
         // Rotace - pomalejší při chůzi
@@ -249,6 +278,7 @@
         this.isWalking = false;
         this.bounceCount = 0;
         this.onGround = false;
+        this.stuckToSide = null;
       }
 
       draw() {
